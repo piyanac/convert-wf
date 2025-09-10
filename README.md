@@ -22,3 +22,6 @@ Output configurations that are theoretically availiable:
 - Traditional Chinese literacy
 
 <img width="592" height="590" alt="截圖 2025-09-10 下午4 15 09" src="https://github.com/user-attachments/assets/54fdc726-70d6-41d1-8e47-43f78d62ad5b" />
+
+## Contributions
+This repo does not accept contributions. Fork it as you like but don't ever bother the author. 
