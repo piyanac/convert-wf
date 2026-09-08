@@ -25,6 +25,10 @@ Output configurations that are theoretically availiable:
 ![image](./Attachments/screenshot-selector.png)
 ![image](./Attachments/screenshot-config.png)
 
+## Roadmap
+This project will freeze at version 1.5 and no further releases is planned. 
+We recommend [Dinky](https://github.com/heyderekj/dinky) for similar workflows. We are not in any way affiliated with Dinky or its developer. 
+
 ## Contributions
 - This repo does not accept contributions.
 - Fork it as you like.

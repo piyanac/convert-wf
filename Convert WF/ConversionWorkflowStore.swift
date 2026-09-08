@@ -39,6 +39,8 @@ final class ConversionWorkflowStore: ObservableObject {
             "854x480": L10n.tr("resolution.480p")
         ]
     }
+    let videoBitrateOptions = ["auto", "1000", "2500", "5000", "8000", "12000", "custom"]
+    let audioBitrateOptions = ["auto", "96", "128", "192", "256", "320", "custom"]
 
     @Published var currentStep: WorkflowStep = .source
 
@@ -54,6 +56,10 @@ final class ConversionWorkflowStore: ObservableObject {
     @Published var selectedVideoCodec = "libx264"
     @Published var selectedAudioCodec = "aac"
     @Published var selectedResolution = "original"
+    @Published var selectedVideoBitrateOption = "auto"
+    @Published var selectedAudioBitrateOption = "auto"
+    @Published var customVideoBitrateKbps = ""
+    @Published var customAudioBitrateKbps = ""
 
     @Published var batchSourceQueue: [URL] = []
     @Published var batchOutputDirectoryURL: URL?
@@ -90,8 +96,17 @@ final class ConversionWorkflowStore: ObservableObject {
         selectedVideoCodec == "copy"
     }
 
+    var isVideoBitrateLocked: Bool { selectedVideoCodec == "copy" }
+
+    var isAudioBitrateLocked: Bool { selectedAudioCodec == "copy" }
+
+    var hasValidBitrateSettings: Bool {
+        (!isVideoBitrateCustom || videoBitrateKbps != nil)
+            && (!isAudioBitrateCustom || audioBitrateKbps != nil)
+    }
+
     var canStartConversion: Bool {
-        hasSources && !converter.isConverting
+        hasSources && !converter.isConverting && hasValidBitrateSettings
     }
 
     var currentParameters: FFmpegParameters {
@@ -99,7 +114,9 @@ final class ConversionWorkflowStore: ObservableObject {
             container: selectedContainer,
             videoCodec: selectedVideoCodec,
             audioCodec: selectedAudioCodec,
-            resolution: selectedResolution
+            resolution: selectedResolution,
+            videoBitrateKbps: isVideoBitrateLocked ? nil : videoBitrateKbps,
+            audioBitrateKbps: isAudioBitrateLocked ? nil : audioBitrateKbps
         )
     }
 
@@ -130,7 +147,7 @@ final class ConversionWorkflowStore: ObservableObject {
     }
 
     var conversionSummaryText: String {
-        let summary = "\(containerDisplayName(selectedContainer)) / \(videoCodecSummaryName(selectedVideoCodec)) / \(audioCodecSummaryName(selectedAudioCodec)) / \(resolutionSummaryText)"
+        let summary = configurationSummaryText
         if isBatchMode {
             return L10n.format("summary.apply_same_settings", L10n.number(sourceURLs.count), summary)
         }
@@ -138,7 +155,7 @@ final class ConversionWorkflowStore: ObservableObject {
     }
 
     var currentRunSummaryText: String {
-        "\(containerDisplayName(selectedContainer)) / \(videoCodecSummaryName(selectedVideoCodec)) / \(audioCodecSummaryName(selectedAudioCodec)) / \(resolutionSummaryText)"
+        configurationSummaryText
     }
 
     var actionHintText: String {
@@ -226,6 +243,7 @@ final class ConversionWorkflowStore: ObservableObject {
             }
         case .files:
             if canAccess(.config) {
+                updateConfigMode(.preset)
                 currentStep = .config
             }
         case .config, .progress, .result:
@@ -268,6 +286,10 @@ final class ConversionWorkflowStore: ObservableObject {
         selectedVideoCodec = preset.videoCodec
         selectedAudioCodec = preset.audioCodec
         selectedResolution = preset.resolution
+        selectedVideoBitrateOption = "auto"
+        selectedAudioBitrateOption = "auto"
+        customVideoBitrateKbps = ""
+        customAudioBitrateKbps = ""
         if selectedVideoCodec == "copy" {
             selectedResolution = "original"
         }
@@ -298,6 +320,26 @@ final class ConversionWorkflowStore: ObservableObject {
     func updateResolution(_ resolution: String) {
         configMode = .manual
         selectedResolution = resolution
+        syncPresetSelectionFromManualChanges()
+    }
+
+    func updateVideoBitrateOption(_ option: String) {
+        selectedVideoBitrateOption = option
+        syncPresetSelectionFromManualChanges()
+    }
+
+    func updateAudioBitrateOption(_ option: String) {
+        selectedAudioBitrateOption = option
+        syncPresetSelectionFromManualChanges()
+    }
+
+    func updateCustomVideoBitrate(_ value: String) {
+        customVideoBitrateKbps = value.filter(\.isNumber)
+        syncPresetSelectionFromManualChanges()
+    }
+
+    func updateCustomAudioBitrate(_ value: String) {
+        customAudioBitrateKbps = value.filter(\.isNumber)
         syncPresetSelectionFromManualChanges()
     }
 
@@ -403,7 +445,9 @@ final class ConversionWorkflowStore: ObservableObject {
                 return
             }
 
-            _ = beginSecurityScopedAccess(for: [sourceURL, destinationURL.deletingLastPathComponent()])
+            // NSSavePanel grants access to the selected file URL, not its parent directory.
+            // Keep that exact security scope active while ffmpeg creates the output.
+            _ = beginSecurityScopedAccess(for: [sourceURL, destinationURL])
             beginNewRun()
             converter.convert(
                 sourceURL: sourceURL,
@@ -494,6 +538,60 @@ final class ConversionWorkflowStore: ObservableObject {
         }
     }
 
+    func videoBitrateOptionTitle(_ option: String) -> String {
+        bitrateOptionTitle(option, unit: "Mb/s", isVideo: true)
+    }
+
+    func audioBitrateOptionTitle(_ option: String) -> String {
+        bitrateOptionTitle(option, unit: "kb/s", isVideo: false)
+    }
+
+    private var configurationSummaryText: String {
+        var parts = [
+            containerDisplayName(selectedContainer),
+            videoCodecSummaryName(selectedVideoCodec),
+            audioCodecSummaryName(selectedAudioCodec),
+            resolutionSummaryText
+        ]
+        if !isVideoBitrateLocked, let videoBitrateKbps {
+            parts.append(L10n.format("summary.video_bitrate", formatVideoBitrate(videoBitrateKbps)))
+        }
+        if !isAudioBitrateLocked, let audioBitrateKbps {
+            parts.append(L10n.format("summary.audio_bitrate", audioBitrateKbps))
+        }
+        return parts.joined(separator: " / ")
+    }
+
+    private var isVideoBitrateCustom: Bool { selectedVideoBitrateOption == "custom" }
+
+    private var isAudioBitrateCustom: Bool { selectedAudioBitrateOption == "custom" }
+
+    private var videoBitrateKbps: Int? {
+        bitrateKbps(option: selectedVideoBitrateOption, customValue: customVideoBitrateKbps)
+    }
+
+    private var audioBitrateKbps: Int? {
+        bitrateKbps(option: selectedAudioBitrateOption, customValue: customAudioBitrateKbps)
+    }
+
+    private func bitrateKbps(option: String, customValue: String) -> Int? {
+        let value = option == "custom" ? customValue : option
+        guard value != "auto", let bitrate = Int(value), bitrate > 0 else { return nil }
+        return bitrate
+    }
+
+    private func bitrateOptionTitle(_ option: String, unit: String, isVideo: Bool) -> String {
+        if option == "auto" { return L10n.tr("bitrate.auto") }
+        if option == "custom" { return L10n.tr("bitrate.custom") }
+        guard let bitrate = Int(option) else { return option }
+        return isVideo ? "\(formatVideoBitrate(bitrate)) \(unit)" : "\(bitrate) \(unit)"
+    }
+
+    private func formatVideoBitrate(_ bitrateKbps: Int) -> String {
+        let megabits = Double(bitrateKbps) / 1_000
+        return megabits.rounded() == megabits ? String(Int(megabits)) : String(format: "%.1f", megabits)
+    }
+
     private func bindConverter() {
         converter.objectWillChange
             .receive(on: RunLoop.main)
@@ -510,12 +608,19 @@ final class ConversionWorkflowStore: ObservableObject {
 
         guard !isApplyingPreset else { return }
 
+        guard selectedVideoBitrateOption == "auto", selectedAudioBitrateOption == "auto" else {
+            selectedPreset = .custom
+            return
+        }
+
         if let matchingPreset = ConversionPreset.allCases.first(where: {
             $0 != .custom && $0.matches(
                 container: selectedContainer,
                 videoCodec: selectedVideoCodec,
                 audioCodec: selectedAudioCodec,
-                resolution: selectedResolution
+                resolution: selectedResolution,
+                videoBitrateKbps: isVideoBitrateLocked ? nil : videoBitrateKbps,
+                audioBitrateKbps: isAudioBitrateLocked ? nil : audioBitrateKbps
             )
         }) {
             selectedPreset = matchingPreset
@@ -809,6 +914,10 @@ final class ConversionWorkflowStore: ObservableObject {
         selectedVideoCodec = settings.videoCodec
         selectedAudioCodec = settings.audioCodec
         selectedResolution = settings.resolution
+        selectedVideoBitrateOption = settings.videoBitrateOption ?? "auto"
+        selectedAudioBitrateOption = settings.audioBitrateOption ?? "auto"
+        customVideoBitrateKbps = settings.customVideoBitrateKbps ?? ""
+        customAudioBitrateKbps = settings.customAudioBitrateKbps ?? ""
         selectedPreset = ConversionPreset(rawValue: settings.selectedPresetRawValue) ?? .custom
         configMode = selectedPreset == .custom ? .manual : .preset
         isApplyingPreset = false
@@ -821,7 +930,11 @@ final class ConversionWorkflowStore: ObservableObject {
             videoCodec: selectedVideoCodec,
             audioCodec: selectedAudioCodec,
             resolution: selectedResolution,
-            selectedPresetRawValue: selectedPreset.rawValue
+            selectedPresetRawValue: selectedPreset.rawValue,
+            videoBitrateOption: selectedVideoBitrateOption,
+            audioBitrateOption: selectedAudioBitrateOption,
+            customVideoBitrateKbps: customVideoBitrateKbps,
+            customAudioBitrateKbps: customAudioBitrateKbps
         )
 
         if let data = try? JSONEncoder().encode(payload),

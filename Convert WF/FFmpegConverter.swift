@@ -133,12 +133,18 @@ final class FFmpegConverter: ObservableObject {
         var arguments = ["-y", "-i", sourceURL.path]
 
         arguments += ["-c:v", parameters.videoCodec]
+        if parameters.videoCodec != "copy", let videoBitrateKbps = parameters.videoBitrateKbps {
+            arguments += ["-b:v", "\(videoBitrateKbps)k"]
+        }
         if parameters.videoCodec != "copy" && parameters.resolution != "original" {
             let scaleValue = parameters.resolution.replacingOccurrences(of: "x", with: ":")
             arguments += ["-vf", "scale=\(scaleValue)"]
         }
 
         arguments += ["-c:a", parameters.audioCodec]
+        if parameters.audioCodec != "copy", let audioBitrateKbps = parameters.audioBitrateKbps {
+            arguments += ["-b:a", "\(audioBitrateKbps)k"]
+        }
         arguments += [destinationURL.path]
 
         let process = Process()

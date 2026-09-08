@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
+    "AAC" : {
+
+    },
     "alert.action_failed.title" : {
       "localizations" : {
         "en" : {
@@ -30,6 +36,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@：%@"
+          }
+        }
+      }
+    },
+    "bitrate.auto" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動"
+          }
+        }
+      }
+    },
+    "bitrate.custom" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自訂"
           }
         }
       }
@@ -458,6 +498,12 @@
         }
       }
     },
+    "H.264" : {
+
+    },
+    "H.265 / HEVC" : {
+
+    },
     "hint.batch_running" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -542,6 +588,9 @@
           }
         }
       }
+    },
+    "MP3" : {
+
     },
     "panel.choose_output_folder" : {
       "extractionState" : "stale",
@@ -832,6 +881,23 @@
         }
       }
     },
+    "summary.audio_bitrate" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio %@ kb/s"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音訊 %@ kb/s"
+          }
+        }
+      }
+    },
     "summary.completed_at" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -879,6 +945,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "輸出格式：%@"
+          }
+        }
+      }
+    },
+    "summary.video_bitrate" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video %@ Mb/s"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "視訊 %@ Mb/s"
           }
         }
       }
@@ -951,6 +1034,38 @@
         }
       }
     },
+    "workflow.config.bitrate.custom_placeholder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom value"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自訂數值"
+          }
+        }
+      }
+    },
+    "workflow.config.bitrate.unit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kb/s"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kb/s"
+          }
+        }
+      }
+    },
     "workflow.config.group.audio" : {
       "localizations" : {
         "en" : {
@@ -963,6 +1078,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "音訊"
+          }
+        }
+      }
+    },
+    "workflow.config.group.audio_bitrate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Bitrate"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音訊碼率"
           }
         }
       }
@@ -1015,6 +1146,22 @@
         }
       }
     },
+    "workflow.config.group.video_bitrate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video Bitrate"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "視訊碼率"
+          }
+        }
+      }
+    },
     "workflow.config.mode" : {
       "localizations" : {
         "en" : {
@@ -1032,7 +1179,6 @@
       }
     },
     "workflow.config.option.source" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

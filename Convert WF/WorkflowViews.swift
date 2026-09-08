@@ -145,8 +145,6 @@ struct SourceLandingView: View {
                         style: StrokeStyle(lineWidth: isDropTargeted ? 2 : 1.5, dash: [6, 6])
                     )
             )
-            .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .onTapGesture(perform: store.selectSourceFile)
             .onDrop(
                 of: [UTType.movie.identifier, UTType.video.identifier, UTType.fileURL.identifier],
                 isTargeted: $isDropTargeted,
@@ -287,61 +285,105 @@ struct ConversionConfigView: View {
     }
 
     private var manualGrid: some View {
-        VStack(spacing: 24) {
-            HStack(alignment: .top, spacing: 28) {
-                ManualPickerGroup(title: "workflow.config.group.container") {
-                    ManualOptionList(
-                        width: 180,
-                        options: store.containerOptions.map {
-                            ManualOption(id: $0, title: store.containerDisplayName($0))
-                        },
-                        selectedID: store.selectedContainer,
-                        onSelect: store.updateContainer(_:)
-                    )
-                }
+        Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 16) {
+            GridRow(alignment: .firstTextBaseline) {
+                optionLabel("workflow.config.group.container")
+                    .gridColumnAlignment(.trailing)
 
-                ManualPickerGroup(title: "workflow.config.group.resolution") {
-                    ManualOptionList(
-                        width: 180,
-                        options: store.resolutionOptions.keys.sorted().map { key in
-                            ManualOption(id: key, title: store.resolutionOptions[key] ?? key)
-                        },
-                        selectedID: store.selectedResolution,
-                        isEnabled: !store.isResolutionLocked,
-                        onSelect: store.updateResolution(_:)
-                    )
+                Picker("", selection: Binding(
+                    get: { store.selectedContainer },
+                    set: store.updateContainer(_:)
+                )) {
+                    ForEach(store.containerOptions, id: \.self) { container in
+                        Text(store.containerDisplayName(container)).tag(container)
+                    }
                 }
+                .labelsHidden()
+                .frame(width: 260, alignment: .leading)
+                .gridColumnAlignment(.leading)
             }
 
-            HStack(alignment: .top, spacing: 28) {
-                ManualPickerGroup(title: "workflow.config.group.video") {
-                    ManualOptionList(
-                        width: 180,
-                        options: [
-                            ManualOption(id: "copy", title: L10n.tr("workflow.config.option.source")),
-                            ManualOption(id: "libx264", title: "H.264"),
-                            ManualOption(id: "libx265", title: "H.265 / HEVC")
-                        ],
-                        selectedID: store.selectedVideoCodec,
-                        onSelect: store.updateVideoCodec(_:)
-                    )
-                }
+            GridRow(alignment: .firstTextBaseline) {
+                optionLabel("workflow.config.group.resolution")
 
-                ManualPickerGroup(title: "workflow.config.group.audio") {
-                    ManualOptionList(
-                        width: 180,
-                        options: [
-                            ManualOption(id: "copy", title: L10n.tr("workflow.config.option.source")),
-                            ManualOption(id: "aac", title: "AAC"),
-                            ManualOption(id: "mp3", title: "MP3")
-                        ],
-                        selectedID: store.selectedAudioCodec,
-                        onSelect: store.updateAudioCodec(_:)
-                    )
+                Picker("", selection: Binding(
+                    get: { store.selectedResolution },
+                    set: store.updateResolution(_:)
+                )) {
+                    ForEach(store.resolutionOptions.keys.sorted(), id: \.self) { resolution in
+                        Text(store.resolutionOptions[resolution] ?? resolution).tag(resolution)
+                    }
                 }
+                .labelsHidden()
+                .frame(width: 260, alignment: .leading)
+                .disabled(store.isResolutionLocked)
+            }
+
+            GridRow(alignment: .firstTextBaseline) {
+                optionLabel("workflow.config.group.video")
+
+                Picker("", selection: Binding(
+                    get: { store.selectedVideoCodec },
+                    set: store.updateVideoCodec(_:)
+                )) {
+                    Text("workflow.config.option.source").tag("copy")
+                    Text("H.264").tag("libx264")
+                    Text("H.265 / HEVC").tag("libx265")
+                }
+                .labelsHidden()
+                .frame(width: 260, alignment: .leading)
+            }
+
+            GridRow(alignment: .firstTextBaseline) {
+                optionLabel("workflow.config.group.video_bitrate")
+
+                BitrateFormControl(
+                    options: store.videoBitrateOptions,
+                    selectedOption: store.selectedVideoBitrateOption,
+                    customValue: store.customVideoBitrateKbps,
+                    isEnabled: !store.isVideoBitrateLocked,
+                    optionTitle: store.videoBitrateOptionTitle(_:),
+                    onSelect: store.updateVideoBitrateOption(_:),
+                    onCustomValueChange: store.updateCustomVideoBitrate(_:)
+                )
+            }
+
+            GridRow(alignment: .firstTextBaseline) {
+                optionLabel("workflow.config.group.audio")
+
+                Picker("", selection: Binding(
+                    get: { store.selectedAudioCodec },
+                    set: store.updateAudioCodec(_:)
+                )) {
+                    Text("workflow.config.option.source").tag("copy")
+                    Text("AAC").tag("aac")
+                    Text("MP3").tag("mp3")
+                }
+                .labelsHidden()
+                .frame(width: 260, alignment: .leading)
+            }
+
+            GridRow(alignment: .firstTextBaseline) {
+                optionLabel("workflow.config.group.audio_bitrate")
+
+                BitrateFormControl(
+                    options: store.audioBitrateOptions,
+                    selectedOption: store.selectedAudioBitrateOption,
+                    customValue: store.customAudioBitrateKbps,
+                    isEnabled: !store.isAudioBitrateLocked,
+                    optionTitle: store.audioBitrateOptionTitle(_:),
+                    onSelect: store.updateAudioBitrateOption(_:),
+                    onCustomValueChange: store.updateCustomAudioBitrate(_:)
+                )
             }
         }
+        .controlSize(.large)
         .frame(maxWidth: .infinity)
+    }
+
+    private func optionLabel(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .foregroundStyle(.secondary)
     }
 
     private func iconName(for preset: ConversionPreset) -> String {
@@ -598,7 +640,6 @@ struct ConversionResultView: View {
 }
 
 private struct FooterPrimaryButton: View {
-    @Environment(\.isEnabled) private var isEnabled
     let title: LocalizedStringKey
     let action: () -> Void
 
@@ -608,58 +649,13 @@ private struct FooterPrimaryButton: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            Text(title)
-        }
-        .buttonStyle(.plain)
-        .font(.headline.weight(.semibold))
-        .foregroundStyle(.white.opacity(isEnabled ? 1 : 0.72))
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(
-            Capsule(style: .continuous)
-                .fill(Color.accentColor.opacity(isEnabled ? 1 : 0.45))
-        )
-        .overlay(
-            Capsule(style: .continuous)
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: Color.accentColor.opacity(isEnabled ? 0.22 : 0), radius: 10, y: 4)
-    }
-}
-
-private struct FooterSecondaryButton: View {
-    let title: LocalizedStringKey
-    var role: ButtonRole?
-    var fixedWidth: CGFloat? = 220
-    let action: () -> Void
-
-    init(
-        _ title: LocalizedStringKey,
-        role: ButtonRole? = nil,
-        fixedWidth: CGFloat? = 220,
-        action: @escaping () -> Void
-    ) {
-        self.title = title
-        self.role = role
-        self.fixedWidth = fixedWidth
-        self.action = action
-    }
-
-    var body: some View {
-        Button(role: role, action: action) {
-            Text(title)
-                .font(.headline.weight(.semibold))
-                .padding(.horizontal, 14)
-                .frame(maxWidth: fixedWidth == nil ? nil : .infinity, minHeight: 44)
-        }
-        .buttonStyle(.bordered)
-        .frame(width: fixedWidth)
+        Button(title, action: action)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
     }
 }
 
 private struct FooterDangerButton: View {
-    @Environment(\.isEnabled) private var isEnabled
     let title: LocalizedStringKey
     let action: () -> Void
 
@@ -669,23 +665,9 @@ private struct FooterDangerButton: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            Text(title)
-        }
-        .buttonStyle(.plain)
-        .font(.headline.weight(.semibold))
-        .foregroundStyle(.white.opacity(isEnabled ? 1 : 0.72))
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(
-            Capsule(style: .continuous)
-                .fill(Color.red.opacity(isEnabled ? 0.92 : 0.42))
-        )
-        .overlay(
-            Capsule(style: .continuous)
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: Color.red.opacity(isEnabled ? 0.18 : 0), radius: 8, y: 3)
+        Button(title, role: .destructive, action: action)
+            .buttonStyle(.bordered)
+            .controlSize(.large)
     }
 }
 
@@ -701,91 +683,45 @@ private struct FooterTertiaryButton: View {
     }
 
     var body: some View {
-        Button(role: role, action: action) {
-            Text(title)
-                .font(.headline)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-        }
-        .buttonStyle(.bordered)
+        Button(title, role: role, action: action)
+            .buttonStyle(.bordered)
+            .controlSize(.large)
     }
 }
 
-private struct ManualPickerGroup<Content: View>: View {
-    let title: LocalizedStringKey
-    @ViewBuilder let content: Content
-
-    init(title: LocalizedStringKey, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            Text(title)
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .frame(width: 110, alignment: .leading)
-
-            content
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
-        }
-    }
-}
-
-private struct ManualOption: Identifiable {
-    let id: String
-    let title: String
-}
-
-private struct ManualOptionList: View {
-    let width: CGFloat
-    let options: [ManualOption]
-    let selectedID: String
-    var isEnabled = true
+private struct BitrateFormControl: View {
+    let options: [String]
+    let selectedOption: String
+    let customValue: String
+    let isEnabled: Bool
+    let optionTitle: (String) -> String
     let onSelect: (String) -> Void
+    let onCustomValueChange: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(options) { option in
-                Button {
-                    guard isEnabled else { return }
-                    onSelect(option.id)
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: selectedID == option.id ? "checkmark" : "")
-                            .frame(width: 14, alignment: .leading)
-                            .foregroundStyle(.primary)
-
-                        Text(option.title)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .contentShape(Rectangle())
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("", selection: Binding(get: { selectedOption }, set: onSelect)) {
+                ForEach(options, id: \.self) { option in
+                    Text(optionTitle(option)).tag(option)
                 }
-                .buttonStyle(.plain)
-                .disabled(!isEnabled)
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .frame(width: 260, alignment: .leading)
 
-                if option.id != options.last?.id {
-                    Divider()
+            if selectedOption == "custom" {
+                HStack(spacing: 8) {
+                    TextField("workflow.config.bitrate.custom_placeholder", text: Binding(
+                        get: { customValue },
+                        set: onCustomValueChange
+                    ))
+
+                    Text("workflow.config.bitrate.unit")
+                        .foregroundStyle(.secondary)
                 }
             }
         }
-        .frame(width: width, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
-        )
-        .opacity(isEnabled ? 1 : 0.55)
+        .frame(width: 260, alignment: .leading)
+        .disabled(!isEnabled)
     }
 }

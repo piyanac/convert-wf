@@ -5,7 +5,6 @@ struct ContentView: View {
 
     var body: some View {
         WorkflowShellView(store: store)
-            .background(Color(nsColor: .windowBackgroundColor))
             .frame(width: store.windowWidth, height: store.windowHeight)
             .navigationTitle(toolbarTitle)
             .toolbarRole(.editor)

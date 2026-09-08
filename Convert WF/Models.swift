@@ -48,6 +48,8 @@ struct FFmpegParameters {
     let videoCodec: String
     let audioCodec: String
     let resolution: String
+    let videoBitrateKbps: Int?
+    let audioBitrateKbps: Int?
 }
 
 struct PersistedConversionSettings: Codable {
@@ -56,6 +58,10 @@ struct PersistedConversionSettings: Codable {
     let audioCodec: String
     let resolution: String
     let selectedPresetRawValue: String
+    let videoBitrateOption: String?
+    let audioBitrateOption: String?
+    let customVideoBitrateKbps: String?
+    let customAudioBitrateKbps: String?
 }
 
 struct RecentConversionRecord: Codable, Identifiable {
@@ -173,11 +179,20 @@ enum ConversionPreset: String, CaseIterable, Identifiable {
         }
     }
 
-    func matches(container: String, videoCodec: String, audioCodec: String, resolution: String) -> Bool {
+    func matches(
+        container: String,
+        videoCodec: String,
+        audioCodec: String,
+        resolution: String,
+        videoBitrateKbps: Int?,
+        audioBitrateKbps: Int?
+    ) -> Bool {
         self.container == container
             && self.videoCodec == videoCodec
             && self.audioCodec == audioCodec
             && self.resolution == resolution
+            && videoBitrateKbps == nil
+            && audioBitrateKbps == nil
     }
 }
 
